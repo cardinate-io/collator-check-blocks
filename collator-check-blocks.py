@@ -2,6 +2,7 @@ import logging
 import os
 import random
 from re import sub
+import sys
 from time import time
 from typing import Optional
 
@@ -36,6 +37,9 @@ class Checker:
         if self.substrate is None:
             logging.warning("Collator not (yet) running")
             return
+        if self.collator_address is None:
+            print("COLLATOR_ADDRESS needs to be set")
+            sys.exit(1)
         highest_block = 0
         blocks = self.rpc("system_syncState")
         highest_block = blocks['highestBlock']
@@ -43,12 +47,11 @@ class Checker:
             return
         last_block = self.get_last_authored_block()
         block_delta = highest_block - last_block
-        fail_threshold = os.getenv("COLLATOR_BLOCK_DELTA_FAIL_THRESHOLD", None)
+        fail_threshold = os.getenv("COLLATOR_BLOCK_DELTA_FAIL_THRESHOLD", 150)
 
         should_restart = False
-        logging.info(f"Collator is {block_delta} blocks behind")
+        message = f"Collator is {block_delta} (of {'-' if fail_threshold is None else fail_threshold} allowed) blocks behind "
         if fail_threshold is not None and block_delta > int(fail_threshold):
-            logging.warning("Considering restart")
             should_restart = True
             if os.path.exists(self.restart_sentinel_file):
                 with open(self.restart_sentinel_file, "r") as f:
@@ -56,12 +59,14 @@ class Checker:
                     current_time = int(time())
                     if ((current_time - last_restart) <= self.restart_offset):
                         should_restart = False
-                        logging.info("Not running long enough")
+                        logging.warning(message)
+                        logging.info("Restart skipped (not running long enough)")
         if should_restart:
+            logging.error(message);
             self.issue_restart()
 
     def issue_restart(self):
-        logging.error("Restarting")
+        logging.info("Restarting")
         with open(self.restart_sentinel_file, "w") as f:
             f.write(str(int(time())));
         os.system(self.restart_command)
@@ -98,6 +103,6 @@ if __name__ == '__main__':
     logging.basicConfig(
         filename=os.getenv("COLLATOR_LOG_FILE", "/var/log/collator-check-blocks.log"),
         level=logging.INFO,
-        format='%(asctime)s %(levelname)s:%(message)s'
+        format='%(asctime)s %(levelname)s: %(message)s'
         )
     Checker().run_check()
