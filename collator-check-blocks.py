@@ -58,12 +58,14 @@ class Checker:
                     last_restart = int(f.readline())
                     current_time = int(time())
                     if ((current_time - last_restart) <= self.restart_offset):
-                        should_restart = False
                         logging.warning(message)
                         logging.info("Restart skipped (not running long enough)")
+                        return
         if should_restart:
             logging.error(message);
             self.issue_restart()
+        else:
+            logging.info(message)
 
     def issue_restart(self):
         logging.info("Restarting")
