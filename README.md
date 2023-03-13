@@ -20,20 +20,18 @@ sudo apt-get install -qy python3-pip python3-virtualenv
 ### Install the script
 
 ```sh
-set -eu
 git clone https://github.com/cardinate-io/collator-check-blocks.git
 cd collator-check-blocks
-sudo python3 -m venv /usr/local/lib/collator-check-blocks
-sudo /usr/local/lib/collator-check-blocks/bin/pip -r requirements.txt
+sudo python3 -m virtualenv /usr/local/lib/collator-check-blocks
+sudo /usr/local/lib/collator-check-blocks/bin/pip install -r requirements.txt
 sudo cp collator-check-blocks.py /usr/local/lib/collator-check-blocks/bin/
 echo "COLLATOR_ADDRESS=$YOUR_COLLATOR_WALLET_ADDRESS" | sudo tee /etc/default/collator-check-blocks
-echo "*/5 * * * * root /usr/local/lib/collator-check-blocks/bin/python /usr/local/lib/collator-check-blocks/bin//collator-check-blocks.py >/dev/null 2>&1" | sudo tee /etc/cron.d/collator-check-blocks
+echo "*/5 * * * * root /usr/local/lib/collator-check-blocks/bin/python /usr/local/lib/collator-check-blocks/bin/collator-check-blocks.py >/dev/null 2>&1" | sudo tee /etc/cron.d/collator-check-blocks
 ```
 
 This installs the script and its Python dependencies into a virtualenv and creates a cron job
 that runs every 5 minutes. Make sure to substitute `$YOUR_COLLATOR_WALLET_ADDRESS` with the
 on-chain account of the collator.
-
 
 ## Configuration
 
